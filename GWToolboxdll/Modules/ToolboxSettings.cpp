@@ -430,6 +430,8 @@ void ToolboxSettings::Update(float)
                 location_file << "Time=" << GW::Map::GetInstanceTime();
                 location_file << " X=" << me->pos.x;
                 location_file << " Y=" << me->pos.y;
+                location_file << " Z=" << me->z;
+                location_file << " zplane=" << me->pos.zplane;
                 location_file << "\n";
             }
         }
