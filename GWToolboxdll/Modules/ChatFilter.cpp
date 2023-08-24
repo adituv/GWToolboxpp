@@ -357,14 +357,16 @@ namespace {
                 // monster/player x drops item y (no assignment)
                 // first segment describes the agent who dropped, second segment describes the item dropped
                 const auto agent_name = GetFirstSegment(message);
+                const auto item_argument = GetSecondSegment(message);
+
+                if (ashes_dropped && IsAshes(item_argument)) {
+                    return true;
+                }
+
                 if (!ShouldIgnoreByAgentThatDropped(agent_name)) {
                     return false;
                 }
-                const auto item_argument = GetSecondSegment(message);
                 if (self_drop_rare && IsRare(item_argument)) {
-                    return true;
-                }
-                if (ashes_dropped && IsAshes(item_argument)) {
                     return true;
                 }
                 return self_drop_common;
