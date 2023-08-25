@@ -105,7 +105,7 @@ namespace ToolboxUtils {
             if (!message) {
                 return nullptr;
             }
-            for (size_t i = 0; message[i] > 0x2; i++) {
+            for (size_t i = 0; message[i] > 0x0; i++) {
                 if (!IsArgumentFlag(message[i])) {
                     continue;
                 }
