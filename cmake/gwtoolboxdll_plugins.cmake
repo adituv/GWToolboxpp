@@ -42,3 +42,4 @@ endmacro()
 
 add_tb_plugin(clock)
 add_tb_plugin(InstanceTimer)
+add_tb_plugin(DumpInventory)
