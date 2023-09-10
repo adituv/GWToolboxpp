@@ -1,5 +1,7 @@
 #include "DumpInventory.h"
 
+#include "ItemConstants.h"
+
 #include <mutex>
 #include <regex>
 
@@ -68,7 +70,7 @@ bool dumpInvCallback(const wchar_t*, int argc, wchar_t** argv) {
         maxBag = 5;
     }
 
-    filename << player_name << ".csv";
+    filename << player_name << ".tsv";
 
     const GW::Inventory* inventory = GW::GetItemContext()->inventory;
 
@@ -79,7 +81,7 @@ bool dumpInvCallback(const wchar_t*, int argc, wchar_t** argv) {
         auto dumpFile = std::make_shared<std::wofstream>(path);
 
         dumpFile->fill('0');
-        *dumpFile << "rarity,model_id,type,name,requirement,attribute,damage/armor/energy,inscribable,prefix,suffix,inscription,description" << std::endl;
+        *dumpFile << "rarity\tmodel_id\ttype\tname\trequirement\tattribute\tdamage/armor/energy\tinscribable\tprefix\tsuffix\tinscription\tdescription" << std::endl;
 
         for (int i = minBag; i <= maxBag; i++) {
             auto bag = inventory->bags[i];
@@ -110,74 +112,12 @@ struct ItemInfo {
     int8_t attribute = -1;
 
     bool inscribable = false;
-    int prefix = -1;
-    int suffix = -1;
-    int inscription = -1;
+    const WeaponUpgrade* prefix = nullptr;
+    const WeaponUpgrade* suffix = nullptr;
+    const WeaponUpgrade* inscription = nullptr;
+
+    int bane_species = -1;
 };
-
-constexpr std::wstring_view attributeNames[] = {
-    L"Fast Casting", L"Illusion Magic", L"Domination Magic", L"Inspiration Magic",
-    L"Blood Magic", L"Death Magic", L"Soul Reaping", L"Curses",
-    L"Air Magic", L"Earth Magic", L"Fire Magic", L"Water Magic", L"Energy Storage",
-    L"Healing Prayers", L"Smiting Prayers", L"Protection Prayers", L"Divine Favor",
-    L"Strength", L"Axe Mastery", L"Hammer Mastery", L"Swordsmanship", L"Tactics",
-    L"Beast Mastery", L"Expertise", L"Wilderness Survival", L"Marksmanship",
-    L"Attribute26", L"Attribute27", L"Attribute28",
-    L"Dagger Mastery", L"Deadly Arts", L"Shadow Arts",
-    L"Communing", L"Restoration Magic", L"Channeling Magic",
-    L"Critical Strikes", L"Spawning Power",
-    L"Spear Mastery", L"Command", L"Motivation", L"Leadership",
-    L"Scythe Mastery", L"Wind Prayers", L"Earth Prayers", L"Mysticism"
-};
-
-constexpr std::wstring_view invalidAttribute = L"Invalid Attribute";
-
-const std::wstring_view& getAttributeName(uint8_t attribute) {
-    if (attribute > 44) {
-        return invalidAttribute;
-    }
-
-    return attributeNames[attribute];
-}
-
-constexpr std::wstring_view speciesModNames[] = {
-    L"Deathbane", L"Charrslaying", L"Trollslaying", L"Pruning", L"Skeletonslaying",
-    L"Giantslaying", L"Dwarfslaying", L"Tenguslaying", L"Demonslaying", L"Dragonslaying",
-    L"Ogreslaying",
-};
-
-constexpr std::wstring_view invalidSpeciesMod = L"INVALID SLAYING MOD";
-
-const std::wstring_view& getSpeciesModName(uint32_t species) {
-    if (species > 10) {
-        return invalidSpeciesMod;
-    }
-    return speciesModNames[species];
-}
-
-bool isPrefix(int upgradeId) {
-    return (upgradeId >= 129 && upgradeId <= 174)
-        || (upgradeId >= 302 && upgradeId <= 314)
-        || (upgradeId >= 327 && upgradeId <= 329)
-        || (upgradeId >= 363 && upgradeId <= 385)
-        || (upgradeId >= 523 && upgradeId <= 528);
-}
-
-bool isSuffix(int upgradeId) {
-    return (upgradeId >= 195 && upgradeId <= 235)
-        || (upgradeId >= 321 && upgradeId <= 326)
-        || (upgradeId >= 337 && upgradeId <= 342)
-        || (upgradeId >= 351 && upgradeId <= 354)
-        || (upgradeId >= 392 && upgradeId <= 403)
-        || (upgradeId >= 535 && upgradeId <= 540);
-}
-
-bool isInscription(int upgradeId) {
-    return (upgradeId >= 348 && upgradeId <= 350)
-        || (upgradeId >= 355 && upgradeId <= 362)
-        || (upgradeId >= 438 && upgradeId <= 477)
-        || upgradeId == 542 || upgradeId == 543;
-}
 
 struct CallbackParam {
     ItemInfo* info;
@@ -217,21 +157,18 @@ void dumpBagToFile_callback2(void* _param, wchar_t* translated) {
     std::wregex endl(L"\r?\n");
     translatedString = std::regex_replace(translatedString, endl, L"; ");
 
-    std::wregex comma(L",");
-    translatedString = std::regex_replace(translatedString, comma, L"\\,");
-
     param->info->description = translatedString;
 
     auto info = param->info;
     auto file = param->file;
     std::unique_lock<std::mutex> lock(dumpBagToFile_mutex);
 
-    *file << info->rarity << ",";
-    *file << info->model_id << ",";
-    *file << static_cast<int>(info->type) << ",";
-    *file << info->name << ",";
-    *file << info->requirement << ",";
-    *file << getAttributeName(info->attribute) << ",";
+    *file << info->rarity << "\t";
+    *file << info->model_id << "\t";
+    *file << static_cast<int>(info->type) << "\t";
+    *file << info->name << "\t";
+    *file << info->requirement << "\t";
+    *file << getAttributeName(info->attribute) << "\t";
 
     if (info->minDamage != -1) {
         *file << "Damage: " << info->minDamage << "-" << info->maxDamage;
@@ -242,14 +179,31 @@ void dumpBagToFile_callback2(void* _param, wchar_t* translated) {
     else if (info->armor != -1) {
         *file << "Armor: " << info->armor;
     }
-    *file << ",";
+    *file << "\t";
 
-    *file << (info->inscribable ? "Inscribable" : "OS") << ",";
-    *file << info->prefix << ",";
-    *file << info->suffix << ",";
-    *file << info->inscription << ",";
+    *file << (info->inscribable ? "Inscribable" : "OS") << "\t";
 
-    *file << info->description << ",";
+    if (info->prefix && info->prefix->asString) {
+        *file << info->prefix->asString;
+    }
+    *file << "\t";
+
+    if (info->suffix) {
+        if (info->suffix->isSlayingMod) {
+            *file << "of " << getSpeciesModName(info->bane_species);
+        }
+        else if (info->suffix->asString) {
+            *file << info->suffix->asString;
+        }
+    } 
+    *file << "\t";
+
+    if (info->inscription && info->inscription->asString) {
+        *file << info->inscription->asString;
+    }
+    *file << "\t";
+
+    *file << info->description << "\t";
     *file << std::endl;
 
     delete param;
@@ -308,25 +262,28 @@ void dumpBagToFile(std::shared_ptr<std::wofstream> file, const GW::Bag* bag) {
 
             switch (mod.identifier()) {
             case 0x8080:
-                //info->bane_species = getSpeciesModName(mod.arg1());
+                info->bane_species = static_cast<int>(mod.arg1());
                 break;
             case 0x2408:
                 {
                     int upgradeId = static_cast<int>(mod.mod & 0xFFFF);
-
-                    if (isPrefix(upgradeId)) {
-                        info->prefix = upgradeId;
-                    }
-                    else if (isSuffix(upgradeId)) {
-                        info->suffix = upgradeId;
-                    }
-                    else if (isInscription(upgradeId)) {
-                        info->inscription = upgradeId;
-                    }
-                    else {
+                    if (!WeaponUpgrades.contains(upgradeId)) {
                         // Shouldn't happen
                         // TODO: output to chat
+                        break;
                     }
+
+                    const WeaponUpgrade& upgrade = WeaponUpgrades.at(upgradeId);
+                    if (upgrade.type == UpgradeType::Prefix) {
+                        info->prefix = &upgrade;
+                    }
+                    else if (upgrade.type == UpgradeType::Suffix) {
+                        info->suffix = &upgrade;
+                    }
+                    else {
+                        info->inscription = &upgrade;
+                    }
+
                 }
                 break;
             case 0x2798:

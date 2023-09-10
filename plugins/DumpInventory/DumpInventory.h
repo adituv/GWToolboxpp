@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ItemUpgrade.h"
+
 #include <ToolboxPlugin.h>
 
 class DumpInventory : public ToolboxPlugin {
