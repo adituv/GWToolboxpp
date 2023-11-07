@@ -195,10 +195,6 @@ namespace Missions {
 
     class PropheciesMission : public Mission {
     private:
-        static IDirect3DTexture9** icon_mission;
-        static IDirect3DTexture9** icon_sword_1;
-        static IDirect3DTexture9** icon_sword_2;
-
         static IDirect3DTexture9* normal_mode_textures[4];
         static IDirect3DTexture9* hard_mode_textures[4];
     public:
@@ -212,12 +208,6 @@ namespace Missions {
 
     class FactionsMission : public Mission {
     private:
-        static IDirect3DTexture9** icon_mission;
-        static IDirect3DTexture9** icon_sword_1;
-        static IDirect3DTexture9** icon_sword_2;
-        static IDirect3DTexture9** icon_sword_3;
-
-
         static IDirect3DTexture9* normal_mode_textures[4];
         static IDirect3DTexture9* hard_mode_textures[4];
     public:
@@ -231,11 +221,6 @@ namespace Missions {
 
     class NightfallMission : public Mission {
     private:
-        static IDirect3DTexture9** icon_mission;
-        static IDirect3DTexture9** icon_sword_1;
-        static IDirect3DTexture9** icon_sword_2;
-        static IDirect3DTexture9** icon_sword_3;
-
         static IDirect3DTexture9* normal_mode_textures[4];
         static IDirect3DTexture9* hard_mode_textures[4];
     public:
@@ -249,11 +234,6 @@ namespace Missions {
 
     class TormentMission : public NightfallMission {
     private:
-        static IDirect3DTexture9** icon_mission;
-        static IDirect3DTexture9** icon_sword_1;
-        static IDirect3DTexture9** icon_sword_2;
-        static IDirect3DTexture9** icon_sword_3;
-
         static IDirect3DTexture9* normal_mode_textures[4];
         static IDirect3DTexture9* hard_mode_textures[4];
     public:
@@ -278,10 +258,12 @@ namespace Missions {
 
 
     class EotNMission : public Mission {
-    public:
-        static MissionImageList normal_mode_images;
-        static MissionImageList hard_mode_images;
+    private:
+        static IDirect3DTexture9* normal_mode_textures[2];
+        static IDirect3DTexture9* hard_mode_textures[2];
 
+        std::string name;
+    public:
         EotNMission(const GW::Constants::MapID _outpost, const GW::Constants::QuestID _zm_quest = static_cast<GW::Constants::QuestID>(0))
             : Mission(_outpost, _zm_quest) { }
 
@@ -289,16 +271,17 @@ namespace Missions {
         IDirect3DTexture9* GetMissionImage() override;
         void CheckProgress(const std::wstring& player_name) override;
 
-    private:
-        std::string name;
+        static void CreateMissionImages();
     };
 
 
     class Dungeon : public EotNMission {
-    public:
-        static MissionImageList normal_mode_images;
-        static MissionImageList hard_mode_images;
+    private:
+        static IDirect3DTexture9* normal_mode_textures[2];
+        static IDirect3DTexture9* hard_mode_textures[2];
 
+        std::vector<GW::Constants::QuestID> zb_quests{};
+    public:
         Dungeon(const GW::Constants::MapID _outpost, const std::vector<GW::Constants::QuestID>& _zb_quests)
             : EotNMission(_outpost), zb_quests(_zb_quests) { }
 
@@ -308,8 +291,8 @@ namespace Missions {
         bool IsDaily() override;
         bool HasQuest() override;
 
-    private:
-        std::vector<GW::Constants::QuestID> zb_quests{};
+        static void CreateMissionImages();
+        IDirect3DTexture9* GetMissionImage() override;
     };
 } // namespace Missions
 

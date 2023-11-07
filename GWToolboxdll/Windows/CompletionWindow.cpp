@@ -645,34 +645,9 @@ namespace {
     }
 }
 
-Mission::MissionImageList EotNMission::normal_mode_images({
-    {L"EOTNMissionIncomplete.png", IDB_Missions_EOTNMissionIncomplete},
-    {L"EOTNMission.png", IDB_Missions_EOTNMission},
-});
-Mission::MissionImageList EotNMission::hard_mode_images({
-    {L"EOTNHardModeMissionIncomplete.png", IDB_Missions_EOTNHardModeMissionIncomplete},
-    {L"EOTNHardModeMission.png", IDB_Missions_EOTNHardModeMission},
-});
-
-Mission::MissionImageList Dungeon::normal_mode_images({
-    {L"EOTNDungeonIncomplete.png", IDB_Missions_EOTNDungeonIncomplete},
-    {L"EOTNDungeon.png", IDB_Missions_EOTNDungeon},
-});
-Mission::MissionImageList Dungeon::hard_mode_images({
-    {L"EOTNHardModeDungeonIncomplete.png", IDB_Missions_EOTNHardModeDungeonIncomplete},
-    {L"EOTNDungeon.png", IDB_Missions_EOTNDungeon},
-});
-Mission::MissionImageList Vanquish::hard_mode_images({
-    {L"VanquishIncomplete.png", IDB_Missions_VanquishIncomplete},
-    {L"Vanquish.png", IDB_Missions_Vanquish},
-});
-
-
 Color Mission::is_daily_bg_color = Colors::ARGB(102, 0, 255, 0);
 Color Mission::has_quest_bg_color = Colors::ARGB(102, 0, 150, 0);
 ImVec2 Mission::icon_size = {48.0f, 48.0f};
-
-
 
 Mission::Mission(const MapID _outpost,
                  const QuestID _zm_quest)
@@ -712,16 +687,6 @@ bool Mission::Draw(IDirect3DDevice9*)
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.f, 0.5f));
     ImGui::PushID(this);
-
-    for (auto file_id : outpost_icons) {
-        if (file_id == WorldMapIcon::None) 
-            continue;
-        const auto texture_ptr = GwDatTextureModule::LoadTextureFromFileId((uint32_t)file_id);
-
-        // TODO: Combine these textures into a composite, then use this instead of GetMissionImage().
-        // This would remove the need for icons to be embedded as resources, my machine doesn't like them.
-        (texture_ptr);
-    }
 
     if (show_as_list) {
         s.y /= 2.f;
@@ -850,7 +815,6 @@ bool Dungeon::HasQuest()
     }
     return false;
 }
-
 
 HeroUnlock::HeroUnlock(HeroID _hero_id)
     : PvESkill(SkillID::No_Skill)
@@ -1051,12 +1015,6 @@ void EotNMission::CheckProgress(const std::wstring& player_name)
         missions_bonus = &completion.at(player_name)->mission_bonus_hm;
     }
     is_completed = bonus = ArrayBoolAt(*missions_bonus, static_cast<uint32_t>(outpost));
-}
-
-IDirect3DTexture9* EotNMission::GetMissionImage()
-{
-    // TODO
-    return nullptr;
 }
 
 void Vanquish::CheckProgress(const std::wstring& player_name)
@@ -1424,9 +1382,6 @@ void CompletionWindow::Initialize()
 void CompletionWindow::Initialize_Prophecies()
 {
     PropheciesMission::CreateMissionImages();
-    FactionsMission::CreateMissionImages();
-    NightfallMission::CreateMissionImages();
-    TormentMission::CreateMissionImages();
 
     auto& prophecies_missions = missions.at(Campaign::Prophecies);
     prophecies_missions.push_back(new PropheciesMission(
@@ -1606,6 +1561,8 @@ void CompletionWindow::Initialize_Prophecies()
 
 void CompletionWindow::Initialize_Factions()
 {
+    FactionsMission::CreateMissionImages();
+
     auto& factions_missions = missions.at(Campaign::Factions);
     factions_missions.push_back(new FactionsMission(
         MapID::Minister_Chos_Estate_outpost_mission, QuestID::ZaishenMission_Minister_Chos_Estate));
@@ -1810,6 +1767,9 @@ void CompletionWindow::Initialize_Factions()
 
 void CompletionWindow::Initialize_Nightfall()
 {
+    NightfallMission::CreateMissionImages();
+    TormentMission::CreateMissionImages();
+
     auto& nightfall_missions = missions.at(Campaign::Nightfall);
     nightfall_missions.push_back(new NightfallMission(
         MapID::Chahbek_Village, QuestID::ZaishenMission_Chahbek_Village));
@@ -2045,8 +2005,8 @@ void CompletionWindow::Initialize_Nightfall()
 
 void CompletionWindow::Initialize_EotN()
 {
-    LoadTextures(EotNMission::normal_mode_images);
-    LoadTextures(EotNMission::hard_mode_images);
+    EotNMission::CreateMissionImages();
+
     auto& eotn_missions = missions.at(Campaign::EyeOfTheNorth);
     // Asura
     eotn_missions.push_back(new EotNMission(MapID::Finding_the_Bloodstone_mission));
@@ -2063,8 +2023,6 @@ void CompletionWindow::Initialize_EotN()
     // Destroyers
     eotn_missions.push_back(new EotNMission(MapID::Destructions_Depths_mission, QuestID::ZaishenMission_Destructions_Depths));
     eotn_missions.push_back(new EotNMission(MapID::A_Time_for_Heroes_mission, QuestID::ZaishenMission_A_Time_for_Heroes));
-
-    LoadTextures(Vanquish::hard_mode_images);
 
     auto& this_vanquishes = vanquishes.at(Campaign::EyeOfTheNorth);
     this_vanquishes.push_back(new Vanquish(MapID::Bjora_Marches, QuestID::ZaishenVanquish_Bjora_Marches));
@@ -2154,8 +2112,8 @@ void CompletionWindow::Initialize_EotN()
 
 void CompletionWindow::Initialize_Dungeons()
 {
-    LoadTextures(Dungeon::normal_mode_images);
-    LoadTextures(Dungeon::hard_mode_images);
+    Dungeon::CreateMissionImages();
+
     auto& dungeons = missions.at(Campaign::BonusMissionPack);
     dungeons.push_back(new Dungeon(
         MapID::Catacombs_of_Kathandrax_Level_1, QuestID::ZaishenBounty_Ilsundur_Lord_of_Fire));
@@ -3199,25 +3157,6 @@ IDirect3DTexture9** Mission::icon_hm_sword_1;
 IDirect3DTexture9** Mission::icon_hm_sword_2;
 IDirect3DTexture9** Mission::icon_hm_sword_3;
 
-IDirect3DTexture9** PropheciesMission::icon_mission;
-IDirect3DTexture9** PropheciesMission::icon_sword_1;
-IDirect3DTexture9** PropheciesMission::icon_sword_2;
-
-IDirect3DTexture9** FactionsMission::icon_mission;
-IDirect3DTexture9** FactionsMission::icon_sword_1;
-IDirect3DTexture9** FactionsMission::icon_sword_2;
-IDirect3DTexture9** FactionsMission::icon_sword_3;
-
-IDirect3DTexture9** NightfallMission::icon_mission;
-IDirect3DTexture9** NightfallMission::icon_sword_1;
-IDirect3DTexture9** NightfallMission::icon_sword_2;
-IDirect3DTexture9** NightfallMission::icon_sword_3;
-
-IDirect3DTexture9** TormentMission::icon_mission;
-IDirect3DTexture9** TormentMission::icon_sword_1;
-IDirect3DTexture9** TormentMission::icon_sword_2;
-IDirect3DTexture9** TormentMission::icon_sword_3;
-
 IDirect3DTexture9* Missions::PropheciesMission::normal_mode_textures[4] = {};
 IDirect3DTexture9* Missions::PropheciesMission::hard_mode_textures[4] = {};
 
@@ -3229,6 +3168,12 @@ IDirect3DTexture9* Missions::NightfallMission::hard_mode_textures[4] = {};
 
 IDirect3DTexture9* Missions::TormentMission::normal_mode_textures[4] = {};
 IDirect3DTexture9* Missions::TormentMission::hard_mode_textures[4] = {};
+
+IDirect3DTexture9* Missions::EotNMission::normal_mode_textures[2] = {};
+IDirect3DTexture9* Missions::EotNMission::hard_mode_textures[2] = {};
+
+IDirect3DTexture9* Missions::Dungeon::normal_mode_textures[2] = {};
+IDirect3DTexture9* Missions::Dungeon::hard_mode_textures[2] = {};
 
 void Mission::CreateMissionImages()
 {
@@ -3247,11 +3192,11 @@ void PropheciesMission::CreateMissionImages()
 {
     Mission::CreateMissionImages();
 
-    PropheciesMission::icon_mission = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_Mission));
-    PropheciesMission::icon_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_CompletePrimary));
-    PropheciesMission::icon_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_CompleteSecondary));
+    IDirect3DTexture9** icon_mission = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_Mission));
+    IDirect3DTexture9** icon_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_CompletePrimary));
+    IDirect3DTexture9** icon_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_CompleteSecondary));
 
-    Resources::EnqueueDxTask([](IDirect3DDevice9* device) {
+    Resources::EnqueueDxTask([=](IDirect3DDevice9* device) {
         normal_mode_textures[0] = *icon_mission;
         hard_mode_textures[0] = *Mission::icon_hard_mode;
 
@@ -3302,12 +3247,12 @@ void FactionsMission::CreateMissionImages()
 {
     Mission::CreateMissionImages();
 
-    icon_mission = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Cantha_Mission));
-    icon_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Cantha_CompletePrimary));
-    icon_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Cantha_CompleteExpert));
-    icon_sword_3 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Cantha_CompleteMaster));
+    IDirect3DTexture9** icon_mission = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Cantha_Mission));
+    IDirect3DTexture9** icon_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Cantha_CompletePrimary));
+    IDirect3DTexture9** icon_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Cantha_CompleteExpert));
+    IDirect3DTexture9** icon_sword_3 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Cantha_CompleteMaster));
 
-    Resources::EnqueueDxTask([](IDirect3DDevice9* device) {
+    Resources::EnqueueDxTask([=](IDirect3DDevice9* device) {
         normal_mode_textures[0] = *icon_mission;
         hard_mode_textures[0] = *Mission::icon_hard_mode;
 
@@ -3361,12 +3306,12 @@ void Missions::NightfallMission::CreateMissionImages()
 {
     Mission::CreateMissionImages();
 
-    icon_mission = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Elona_Mission));
-    icon_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Elona_CompletePrimary));
-    icon_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Elona_CompleteExpert));
-    icon_sword_3 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Elona_CompleteMaster));
+    IDirect3DTexture9** icon_mission = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Elona_Mission));
+    IDirect3DTexture9** icon_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Elona_CompletePrimary));
+    IDirect3DTexture9** icon_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Elona_CompleteExpert));
+    IDirect3DTexture9** icon_sword_3 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Elona_CompleteMaster));
 
-    Resources::EnqueueDxTask([](IDirect3DDevice9* device) {
+    Resources::EnqueueDxTask([=](IDirect3DDevice9* device) {
         normal_mode_textures[0] = *icon_mission;
         hard_mode_textures[0] = *Mission::icon_hard_mode;
 
@@ -3420,12 +3365,12 @@ void TormentMission::CreateMissionImages()
 {
     Mission::CreateMissionImages();
 
-    icon_mission = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::RealmOfTorment_Mission));
-    icon_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::RealmOfTorment_CompletePrimary));
-    icon_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::RealmOfTorment_CompleteExpert));
-    icon_sword_3 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::RealmOfTorment_CompleteMaster));
+    IDirect3DTexture9** icon_mission = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::RealmOfTorment_Mission));
+    IDirect3DTexture9** icon_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::RealmOfTorment_CompletePrimary));
+    IDirect3DTexture9** icon_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::RealmOfTorment_CompleteExpert));
+    IDirect3DTexture9** icon_sword_3 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::RealmOfTorment_CompleteMaster));
 
-    Resources::EnqueueDxTask([](IDirect3DDevice9* device) {
+    Resources::EnqueueDxTask([=](IDirect3DDevice9* device) {
         normal_mode_textures[0] = *icon_mission;
         hard_mode_textures[0] = *Mission::icon_hard_mode;
 
@@ -3462,7 +3407,7 @@ void TormentMission::CreateMissionImages()
         DrawTextures(device, hard_mode_textures[1], { *icon_hard_mode });
         DrawTextures(device, hard_mode_textures[2], { *icon_hard_mode });
         DrawTextures(device, hard_mode_textures[3], { *icon_hard_mode_gold });
-        });
+    });
 }
 
 IDirect3DTexture9* TormentMission::GetMissionImage()
@@ -3473,4 +3418,80 @@ IDirect3DTexture9* TormentMission::GetMissionImage()
         return TormentMission::hard_mode_textures[idx];
     }
     return TormentMission::normal_mode_textures[idx];
+}
+
+void Missions::EotNMission::CreateMissionImages()
+{
+    IDirect3DTexture9** icon_nm = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::EyeOfTheNorth_Mission));
+    IDirect3DTexture9** icon_hm = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::EyeOfTheNorth_HardMode_Mission));
+
+    Resources::EnqueueDxTask([icon_nm, icon_hm](IDirect3DDevice9* device) {
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[0], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[1], nullptr);
+
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[0], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[1], nullptr);
+
+        if (quad_buffer == nullptr) {
+            InitializeQuadBuffer(device);
+        }
+
+        SetURange(0.0f, 0.5f);
+
+        DrawTextures(device, normal_mode_textures[0], { *icon_nm });
+        DrawTextures(device, hard_mode_textures[0], { *icon_hm });
+
+        SetURange(0.5f, 1.0f);
+
+        DrawTextures(device, normal_mode_textures[1], { *icon_nm });
+        DrawTextures(device, hard_mode_textures[1], { *icon_hm });
+
+        // TODO: reduce/remove transparency
+    });
+}
+
+IDirect3DTexture9* EotNMission::GetMissionImage()
+{
+    if (hard_mode) {
+        return is_completed ? hard_mode_textures[1] : hard_mode_textures[0];
+    }
+
+    return is_completed ? normal_mode_textures[1] : normal_mode_textures[0];
+}
+
+void Missions::Dungeon::CreateMissionImages()
+{
+    IDirect3DTexture9** icon_nm = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::EyeOfTheNorth_Dungeon));
+    IDirect3DTexture9** icon_hm = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::EyeOfTheNorth_HardMode_Dungeon));
+
+    Resources::EnqueueDxTask([icon_nm, icon_hm](IDirect3DDevice9* device) {
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[0], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[1], nullptr);
+
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[0], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[1], nullptr);
+
+        if (quad_buffer == nullptr) {
+            InitializeQuadBuffer(device);
+        }
+
+        SetURange(0.0f, 0.5f);
+
+        DrawTextures(device, normal_mode_textures[0], { *icon_nm });
+        DrawTextures(device, hard_mode_textures[0], { *icon_hm });
+
+        SetURange(0.5f, 1.0f);
+
+        DrawTextures(device, normal_mode_textures[1], { *icon_nm });
+        DrawTextures(device, hard_mode_textures[1], { *icon_hm });
+        });
+}
+
+IDirect3DTexture9* Missions::Dungeon::GetMissionImage()
+{
+    if (hard_mode) {
+        return is_completed ? hard_mode_textures[1] : hard_mode_textures[0];
+    }
+
+    return is_completed ? normal_mode_textures[1] : normal_mode_textures[0];
 }
