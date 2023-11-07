@@ -553,8 +553,6 @@ namespace {
     IDirect3DTexture9** proph_mission_sword2_texture;
 
     IDirect3DTexture9* compose_textures(IDirect3DDevice9* device, const std::vector<IDirect3DTexture9*>& textures) {
-        IDirect3DTexture9* result_texture = nullptr;
-
         constexpr UINT TEX_WIDTH = 128;
         constexpr UINT TEX_HEIGHT = 128;
 
@@ -571,12 +569,12 @@ namespace {
             vertices[0].u = 0.0f;
             vertices[0].v = 0.0f;
 
-            vertices[1].x = TEX_WIDTH;
-            vertices[1].y = 0.0f;
+            vertices[1].x = 0.0f;
+            vertices[1].y = TEX_HEIGHT;
             vertices[1].z = 0.0f;
             vertices[1].rhw = 1.0f;
-            vertices[1].u = 1.0f;
-            vertices[1].v = 0.0f;
+            vertices[1].u = 0.0f;
+            vertices[1].v = 1.0f;
 
             vertices[2].x = TEX_WIDTH;
             vertices[2].y = TEX_HEIGHT;
@@ -585,12 +583,12 @@ namespace {
             vertices[2].u = 1.0f;
             vertices[2].v = 1.0f;
 
-            vertices[3].x = 0.0f;
-            vertices[3].y = TEX_WIDTH;
+            vertices[3].x = TEX_WIDTH;
+            vertices[3].y = 0.0f;
             vertices[3].z = 0.0f;
             vertices[3].rhw = 1.0f;
-            vertices[3].u = 0.0f;
-            vertices[3].v = 1.0f;
+            vertices[3].u = 1.0f;
+            vertices[3].v = 0.0f;
 
             quad_buffer->Unlock();
         }
@@ -603,20 +601,19 @@ namespace {
         render_target->GetSurfaceLevel(0, &render_surface);
         device->SetRenderTarget(0, render_surface);
 
+        device->SetFVF(D3DFVF_CUSTOMVERTEX);
+        device->SetStreamSource(0, quad_buffer, 0, sizeof(Vertex));
+
         for (auto tex : textures) {
+            D3DSURFACE_DESC desc;
+            tex->GetLevelDesc(0, &desc);
             device->SetTexture(0, tex);
             device->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
         }
 
-        IDirect3DSurface9* result_surface = nullptr;
-        device->CreateTexture(TEX_WIDTH, TEX_HEIGHT, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &result_texture, nullptr);
-        result_texture->GetSurfaceLevel(0, &result_surface);
+        device->SetRenderTarget(0, nullptr);
 
-        device->GetRenderTargetData(render_surface, result_surface);
-
-        render_target->Release();
-
-        return result_texture;
+        return render_target;
     }
 }
 
@@ -1466,6 +1463,8 @@ void CompletionWindow::Initialize_Prophecies()
 {
     LoadTextures(PropheciesMission::normal_mode_images);
     LoadTextures(PropheciesMission::hard_mode_images);
+
+    PropheciesMission::CreateMissionImages();
 
     auto& prophecies_missions = missions.at(Campaign::Prophecies);
     prophecies_missions.push_back(new PropheciesMission(
@@ -3243,4 +3242,42 @@ void UnlockedPvPItemUpgrade::OnClick()
             GuiUtils::OpenWiki(wiki_url);
         });
     }
+}
+
+IDirect3DTexture9** Missions::PropheciesMission::normal_mode_parts[3] = {};
+IDirect3DTexture9** Missions::PropheciesMission::hard_mode_parts[3] = {};
+
+IDirect3DTexture9* Missions::PropheciesMission::normal_mode_textures[4] = {};
+IDirect3DTexture9* Missions::PropheciesMission::hard_mode_textures[4] = {};
+
+void Missions::PropheciesMission::CreateMissionImages()
+{
+    PropheciesMission::normal_mode_parts[0] = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_Mission));
+    PropheciesMission::normal_mode_parts[1] = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_CompletePrimary));
+    PropheciesMission::normal_mode_parts[2] = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_CompleteSecondary));
+
+    PropheciesMission::hard_mode_parts[0] = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::HardMode));
+    PropheciesMission::hard_mode_parts[1] = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::HardMode_CompletePrimary));
+    PropheciesMission::hard_mode_parts[2] = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::HardMode_CompleteExpert));
+
+    Resources::EnqueueDxTask([](IDirect3DDevice9* device) {
+        normal_mode_textures[0] = *normal_mode_parts[0];
+        normal_mode_textures[1] = compose_textures(device, { *normal_mode_parts[1], *normal_mode_parts[0] });
+        normal_mode_textures[2] = compose_textures(device, { *normal_mode_parts[2], *normal_mode_parts[0] });
+        normal_mode_textures[3] = compose_textures(device, { *normal_mode_parts[2], *normal_mode_parts[1], *normal_mode_parts[0] });
+
+        hard_mode_textures[0] = *hard_mode_parts[0];
+        hard_mode_textures[1] = compose_textures(device, { *hard_mode_parts[1], *hard_mode_parts[0] });
+        hard_mode_textures[2] = compose_textures(device, { *hard_mode_parts[2], *hard_mode_parts[0] });
+        hard_mode_textures[3] = compose_textures(device, { *hard_mode_parts[2], *hard_mode_parts[1], *hard_mode_parts[0] });
+    });
+}
+
+IDirect3DTexture9* Missions::PropheciesMission::GetMissionImage()
+{
+    int idx = this->is_completed + 2 * this->bonus;
+    if (hard_mode) {
+        return PropheciesMission::hard_mode_textures[idx];
+    }
+    return PropheciesMission::normal_mode_textures[idx];
 }

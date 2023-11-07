@@ -189,11 +189,20 @@ namespace Missions {
 
     class PropheciesMission : public Mission {
     public:
+        static IDirect3DTexture9** normal_mode_parts[3];
+        static IDirect3DTexture9** hard_mode_parts[3];
+
+        static IDirect3DTexture9* normal_mode_textures[4];
+        static IDirect3DTexture9* hard_mode_textures[4];
+
         static MissionImageList normal_mode_images;
         static MissionImageList hard_mode_images;
 
         PropheciesMission(const GW::Constants::MapID _outpost, const GW::Constants::QuestID _zm_quest = static_cast<GW::Constants::QuestID>(0))
             : Mission(_outpost, normal_mode_images, hard_mode_images, _zm_quest) { }
+
+        static void CreateMissionImages();
+        IDirect3DTexture9* GetMissionImage() override;
     };
 
 
