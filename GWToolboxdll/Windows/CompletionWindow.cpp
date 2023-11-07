@@ -621,59 +621,29 @@ namespace {
         vertices[3].u = max;
         quad_buffer->Unlock();
     }
+
+    int iconIndexFromMissionState(uint8_t mission_state) {
+        int idx = 0;
+
+        switch (mission_state) {
+        case 7:
+            idx = 3;
+            break;
+        case 3:
+            idx = 2;
+            break;
+        case 1:
+            idx = 1;
+            break;
+        case 0:
+            break;
+        default:
+            Log::Error("Invalid mission state: %d", mission_state);
+        }
+
+        return idx;
+    }
 }
-
-Mission::MissionImageList PropheciesMission::normal_mode_images({
-    {L"MissionIconIncomplete.png", IDB_Missions_MissionIconIncomplete},
-    {L"MissionIconPrimary.png", IDB_Missions_MissionIconPrimary},
-    {L"MissionIconBonus.png", IDB_Missions_MissionIconBonus},
-    {L"MissionIcon.png", IDB_Missions_MissionIcon},
-});
-Mission::MissionImageList PropheciesMission::hard_mode_images({
-    {L"HardModeMissionIconIncomplete.png", IDB_Missions_HardModeMissionIconIncomplete},
-    {L"HardModeMissionIcon1.png", IDB_Missions_HardModeMissionIcon1},
-    {L"HardModeMissionIcon1b.png", IDB_Missions_HardModeMissionIcon1b},
-    {L"HardModeMissionIcon2.png", IDB_Missions_HardModeMissionIcon2},
-});
-
-Mission::MissionImageList FactionsMission::normal_mode_images({
-    {L"FactionsMissionIconIncomplete.png", IDB_Missions_FactionsMissionIconIncomplete},
-    {L"FactionsMissionIconPrimary.png", IDB_Missions_FactionsMissionIconPrimary},
-    {L"FactionsMissionIconExpert.png", IDB_Missions_FactionsMissionIconExpert},
-    {L"FactionsMissionIcon.png", IDB_Missions_FactionsMissionIcon},
-});
-Mission::MissionImageList FactionsMission::hard_mode_images({
-    {L"HardModeMissionIconIncomplete.png", IDB_Missions_HardModeMissionIconIncomplete},
-    {L"HardModeMissionIcon1.png", IDB_Missions_HardModeMissionIcon1},
-    {L"HardModeMissionIcon2.png", IDB_Missions_HardModeMissionIcon2},
-    {L"HardModeMissionIcon.png", IDB_Missions_HardModeMissionIcon},
-});
-
-Mission::MissionImageList NightfallMission::normal_mode_images({
-    {L"NightfallMissionIconIncomplete.png", IDB_Missions_NightfallMissionIconIncomplete},
-    {L"NightfallMissionIconPrimary.png", IDB_Missions_NightfallMissionIconPrimary},
-    {L"NightfallMissionIconExpert.png", IDB_Missions_NightfallMissionIconExpert},
-    {L"NightfallMissionIcon.png", IDB_Missions_NightfallMissionIcon},
-});
-Mission::MissionImageList NightfallMission::hard_mode_images({
-    {L"HardModeMissionIconIncomplete.png", IDB_Missions_HardModeMissionIconIncomplete},
-    {L"HardModeMissionIcon1.png", IDB_Missions_HardModeMissionIcon1},
-    {L"HardModeMissionIcon2.png", IDB_Missions_HardModeMissionIcon2},
-    {L"HardModeMissionIcon.png", IDB_Missions_HardModeMissionIcon},
-});
-
-Mission::MissionImageList TormentMission::normal_mode_images({
-    {L"NightfallTormentMissionIconIncomplete.png", IDB_Missions_NightfallTormentMissionIconIncomplete},
-    {L"NightfallTormentMissionIconPrimary.png", IDB_Missions_NightfallTormentMissionIconPrimary},
-    {L"NightfallTormentMissionIconExpert.png", IDB_Missions_NightfallTormentMissionIconExpert},
-    {L"NightfallTormentMissionIcon.png", IDB_Missions_NightfallTormentMissionIcon},
-});
-Mission::MissionImageList TormentMission::hard_mode_images({
-    {L"HardModeMissionIconIncomplete.png", IDB_Missions_HardModeMissionIconIncomplete},
-    {L"HardModeMissionIcon1.png", IDB_Missions_HardModeMissionIcon1},
-    {L"HardModeMissionIcon2.png", IDB_Missions_HardModeMissionIcon2},
-    {L"HardModeMissionIcon.png", IDB_Missions_HardModeMissionIcon},
-});
 
 Mission::MissionImageList EotNMission::normal_mode_images({
     {L"EOTNMissionIncomplete.png", IDB_Missions_EOTNMissionIncomplete},
@@ -1453,9 +1423,6 @@ void CompletionWindow::Initialize()
 
 void CompletionWindow::Initialize_Prophecies()
 {
-    LoadTextures(PropheciesMission::normal_mode_images);
-    LoadTextures(PropheciesMission::hard_mode_images);
-
     PropheciesMission::CreateMissionImages();
     FactionsMission::CreateMissionImages();
     NightfallMission::CreateMissionImages();
@@ -1512,8 +1479,6 @@ void CompletionWindow::Initialize_Prophecies()
         MapID::Abaddons_Mouth, QuestID::ZaishenMission_Abaddons_Mouth));
     prophecies_missions.push_back(new PropheciesMission(
         MapID::Hells_Precipice, QuestID::ZaishenMission_Hells_Precipice));
-
-    LoadTextures(Vanquish::hard_mode_images);
 
     auto& prophecies_vanquishes = vanquishes.at(Campaign::Prophecies);
     prophecies_vanquishes.push_back(new Vanquish(MapID::Pockmark_Flats));
@@ -1641,9 +1606,6 @@ void CompletionWindow::Initialize_Prophecies()
 
 void CompletionWindow::Initialize_Factions()
 {
-    LoadTextures(FactionsMission::normal_mode_images);
-    LoadTextures(FactionsMission::hard_mode_images);
-
     auto& factions_missions = missions.at(Campaign::Factions);
     factions_missions.push_back(new FactionsMission(
         MapID::Minister_Chos_Estate_outpost_mission, QuestID::ZaishenMission_Minister_Chos_Estate));
@@ -1675,8 +1637,6 @@ void CompletionWindow::Initialize_Factions()
         MapID::Raisu_Palace_outpost_mission, QuestID::ZaishenMission_Raisu_Palace));
     factions_missions.push_back(new FactionsMission(
         MapID::Imperial_Sanctum_outpost_mission, QuestID::ZaishenMission_Imperial_Sanctum));
-
-    LoadTextures(Vanquish::hard_mode_images);
 
     auto& this_vanquishes = vanquishes.at(Campaign::Factions);
     this_vanquishes.push_back(new Vanquish(MapID::Haiju_Lagoon, QuestID::ZaishenVanquish_Haiju_Lagoon));
@@ -1850,11 +1810,6 @@ void CompletionWindow::Initialize_Factions()
 
 void CompletionWindow::Initialize_Nightfall()
 {
-    LoadTextures(NightfallMission::normal_mode_images);
-    LoadTextures(NightfallMission::hard_mode_images);
-    LoadTextures(TormentMission::normal_mode_images);
-    LoadTextures(TormentMission::hard_mode_images);
-
     auto& nightfall_missions = missions.at(Campaign::Nightfall);
     nightfall_missions.push_back(new NightfallMission(
         MapID::Chahbek_Village, QuestID::ZaishenMission_Chahbek_Village));
@@ -1896,8 +1851,6 @@ void CompletionWindow::Initialize_Nightfall()
         MapID::Gate_of_Madness, QuestID::ZaishenMission_Gate_of_Madness));
     nightfall_missions.push_back(new TormentMission(
         MapID::Abaddons_Gate, QuestID::ZaishenMission_Abaddons_Gate));
-
-    LoadTextures(Vanquish::hard_mode_images);
 
     auto& this_vanquishes = vanquishes.at(Campaign::Nightfall);
     this_vanquishes.push_back(new Vanquish(MapID::Cliffs_of_Dohjok));
@@ -3260,11 +3213,22 @@ IDirect3DTexture9** NightfallMission::icon_sword_1;
 IDirect3DTexture9** NightfallMission::icon_sword_2;
 IDirect3DTexture9** NightfallMission::icon_sword_3;
 
+IDirect3DTexture9** TormentMission::icon_mission;
+IDirect3DTexture9** TormentMission::icon_sword_1;
+IDirect3DTexture9** TormentMission::icon_sword_2;
+IDirect3DTexture9** TormentMission::icon_sword_3;
+
 IDirect3DTexture9* Missions::PropheciesMission::normal_mode_textures[4] = {};
 IDirect3DTexture9* Missions::PropheciesMission::hard_mode_textures[4] = {};
 
 IDirect3DTexture9* Missions::FactionsMission::normal_mode_textures[4] = {};
 IDirect3DTexture9* Missions::FactionsMission::hard_mode_textures[4] = {};
+
+IDirect3DTexture9* Missions::NightfallMission::normal_mode_textures[4] = {};
+IDirect3DTexture9* Missions::NightfallMission::hard_mode_textures[4] = {};
+
+IDirect3DTexture9* Missions::TormentMission::normal_mode_textures[4] = {};
+IDirect3DTexture9* Missions::TormentMission::hard_mode_textures[4] = {};
 
 void Mission::CreateMissionImages()
 {
@@ -3380,29 +3344,12 @@ void FactionsMission::CreateMissionImages()
         DrawTextures(device, hard_mode_textures[1], { *icon_hard_mode });
         DrawTextures(device, hard_mode_textures[2], { *icon_hard_mode });
         DrawTextures(device, hard_mode_textures[3], { *icon_hard_mode_gold });
-
     });
 }
 
 IDirect3DTexture9* Missions::FactionsMission::GetMissionImage()
 {
-    int idx = 0;
-
-    switch (this->mission_state) {
-    case 7:
-        idx = 3;
-        break;
-    case 3:
-        idx = 2;
-        break;
-    case 1:
-        idx = 1;
-        break;
-    case 0:
-        break;
-    default:
-        Log::Error("Invalid mission state: %d", this->mission_state);
-    }
+    int idx = iconIndexFromMissionState(this->mission_state);
 
     if (hard_mode) {
         return FactionsMission::hard_mode_textures[idx];
@@ -3412,13 +3359,118 @@ IDirect3DTexture9* Missions::FactionsMission::GetMissionImage()
 
 void Missions::NightfallMission::CreateMissionImages()
 {
+    Mission::CreateMissionImages();
+
+    icon_mission = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Elona_Mission));
+    icon_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Elona_CompletePrimary));
+    icon_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Elona_CompleteExpert));
+    icon_sword_3 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Elona_CompleteMaster));
+
+    Resources::EnqueueDxTask([](IDirect3DDevice9* device) {
+        normal_mode_textures[0] = *icon_mission;
+        hard_mode_textures[0] = *Mission::icon_hard_mode;
+
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[1], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[2], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[3], nullptr);
+
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[1], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[2], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[3], nullptr);
+
+        if (quad_buffer == nullptr) {
+            InitializeQuadBuffer(device);
+        }
+
+        SetURange(0.0f, 0.5f);
+
+        DrawTextures(device, normal_mode_textures[1], { *icon_mission });
+        DrawTextures(device, normal_mode_textures[2], { *icon_mission });
+        DrawTextures(device, normal_mode_textures[3], { *icon_mission });
+
+        SetURange(0.0f, 1.0f);
+
+        DrawTextures(device, normal_mode_textures[1], { *icon_sword_1 });
+        DrawTextures(device, normal_mode_textures[2], { *icon_sword_1, *icon_sword_2 });
+        DrawTextures(device, normal_mode_textures[3], { *icon_sword_1, *icon_sword_2, *icon_sword_3 });
+
+        DrawTextures(device, hard_mode_textures[1], { *icon_hm_sword_1 });
+        DrawTextures(device, hard_mode_textures[2], { *icon_hm_sword_1, *icon_hm_sword_2 });
+        DrawTextures(device, hard_mode_textures[3], { *icon_hm_sword_1, *icon_hm_sword_2, *icon_hm_sword_3 });
+
+        SetURange(0.0f, 0.5f);
+
+        DrawTextures(device, hard_mode_textures[1], { *icon_hard_mode });
+        DrawTextures(device, hard_mode_textures[2], { *icon_hard_mode });
+        DrawTextures(device, hard_mode_textures[3], { *icon_hard_mode_gold });
+    });
 }
 
 IDirect3DTexture9* Missions::NightfallMission::GetMissionImage()
 {
-    int idx = this->is_completed + 2 * this->bonus;
+    int idx = iconIndexFromMissionState(this->mission_state);
+
     if (hard_mode) {
-        return PropheciesMission::hard_mode_textures[idx];
+        return NightfallMission::hard_mode_textures[idx];
     }
-    return PropheciesMission::normal_mode_textures[idx];
+    return NightfallMission::normal_mode_textures[idx];
+}
+
+void TormentMission::CreateMissionImages()
+{
+    Mission::CreateMissionImages();
+
+    icon_mission = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::RealmOfTorment_Mission));
+    icon_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::RealmOfTorment_CompletePrimary));
+    icon_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::RealmOfTorment_CompleteExpert));
+    icon_sword_3 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::RealmOfTorment_CompleteMaster));
+
+    Resources::EnqueueDxTask([](IDirect3DDevice9* device) {
+        normal_mode_textures[0] = *icon_mission;
+        hard_mode_textures[0] = *Mission::icon_hard_mode;
+
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[1], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[2], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[3], nullptr);
+
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[1], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[2], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[3], nullptr);
+
+        if (quad_buffer == nullptr) {
+            InitializeQuadBuffer(device);
+        }
+
+        SetURange(0.0f, 0.5f);
+
+        DrawTextures(device, normal_mode_textures[1], { *icon_mission });
+        DrawTextures(device, normal_mode_textures[2], { *icon_mission });
+        DrawTextures(device, normal_mode_textures[3], { *icon_mission });
+
+        SetURange(0.0f, 1.0f);
+
+        DrawTextures(device, normal_mode_textures[1], { *icon_sword_1 });
+        DrawTextures(device, normal_mode_textures[2], { *icon_sword_1, *icon_sword_2 });
+        DrawTextures(device, normal_mode_textures[3], { *icon_sword_1, *icon_sword_2, *icon_sword_3 });
+
+        DrawTextures(device, hard_mode_textures[1], { *icon_hm_sword_1 });
+        DrawTextures(device, hard_mode_textures[2], { *icon_hm_sword_1, *icon_hm_sword_2 });
+        DrawTextures(device, hard_mode_textures[3], { *icon_hm_sword_1, *icon_hm_sword_2, *icon_hm_sword_3 });
+
+        SetURange(0.0f, 0.5f);
+
+        DrawTextures(device, hard_mode_textures[1], { *icon_hard_mode });
+        DrawTextures(device, hard_mode_textures[2], { *icon_hard_mode });
+        DrawTextures(device, hard_mode_textures[3], { *icon_hard_mode_gold });
+        });
+}
+
+IDirect3DTexture9* TormentMission::GetMissionImage()
+{
+    int idx = iconIndexFromMissionState(this->mission_state);
+
+    if (hard_mode) {
+        return TormentMission::hard_mode_textures[idx];
+    }
+    return TormentMission::normal_mode_textures[idx];
 }

@@ -41,6 +41,9 @@ namespace CompletionWindow_Constants {
         RealmOfTorment_Outpost = 0x322af,
         RealmOfTorment_City = 0x322b1,
         RealmOfTorment_Mission = 0x38058,
+        RealmOfTorment_CompletePrimary = 0x3805c,
+        RealmOfTorment_CompleteExpert = 0x3805e,
+        RealmOfTorment_CompleteMaster = 0x38060,
         RealmOfTorment_ChallengeMission = 0x38056,
 
         RealmOfTorment_EliteArea = 0x43466,

@@ -194,17 +194,14 @@ namespace Missions {
     };
 
     class PropheciesMission : public Mission {
-    public:
+    private:
         static IDirect3DTexture9** icon_mission;
         static IDirect3DTexture9** icon_sword_1;
         static IDirect3DTexture9** icon_sword_2;
 
-        static MissionImageList normal_mode_images;
-        static MissionImageList hard_mode_images;
-
         static IDirect3DTexture9* normal_mode_textures[4];
         static IDirect3DTexture9* hard_mode_textures[4];
-
+    public:
         PropheciesMission(const GW::Constants::MapID _outpost, const GW::Constants::QuestID _zm_quest = static_cast<GW::Constants::QuestID>(0))
             : Mission(_outpost, _zm_quest) { }
 
@@ -219,13 +216,11 @@ namespace Missions {
         static IDirect3DTexture9** icon_sword_1;
         static IDirect3DTexture9** icon_sword_2;
         static IDirect3DTexture9** icon_sword_3;
-    public:
-        static MissionImageList normal_mode_images;
-        static MissionImageList hard_mode_images;
+
 
         static IDirect3DTexture9* normal_mode_textures[4];
         static IDirect3DTexture9* hard_mode_textures[4];
-
+    public:
         FactionsMission(const GW::Constants::MapID _outpost, const GW::Constants::QuestID _zm_quest = static_cast<GW::Constants::QuestID>(0))
             : Mission(_outpost, _zm_quest) { }
 
@@ -241,13 +236,9 @@ namespace Missions {
         static IDirect3DTexture9** icon_sword_2;
         static IDirect3DTexture9** icon_sword_3;
 
-    public:
-        static MissionImageList normal_mode_images;
-        static MissionImageList hard_mode_images;
-
         static IDirect3DTexture9* normal_mode_textures[4];
         static IDirect3DTexture9* hard_mode_textures[4];
-
+    public:
         NightfallMission(const GW::Constants::MapID _outpost, const GW::Constants::QuestID _zm_quest = static_cast<GW::Constants::QuestID>(0))
             : Mission(_outpost, _zm_quest) { }
 
@@ -257,15 +248,20 @@ namespace Missions {
 
 
     class TormentMission : public NightfallMission {
-    public:
-        static MissionImageList normal_mode_images;
-        static MissionImageList hard_mode_images;
+    private:
+        static IDirect3DTexture9** icon_mission;
+        static IDirect3DTexture9** icon_sword_1;
+        static IDirect3DTexture9** icon_sword_2;
+        static IDirect3DTexture9** icon_sword_3;
 
         static IDirect3DTexture9* normal_mode_textures[4];
         static IDirect3DTexture9* hard_mode_textures[4];
-
+    public:
         TormentMission(const GW::Constants::MapID _outpost, const GW::Constants::QuestID _zm_quest = static_cast<GW::Constants::QuestID>(0))
             : NightfallMission(_outpost, _zm_quest) { }
+
+        static void CreateMissionImages();
+        IDirect3DTexture9* GetMissionImage() override;
     };
 
     class Vanquish : public Mission {
