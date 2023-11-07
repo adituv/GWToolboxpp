@@ -535,6 +535,89 @@ namespace {
         }
         return subject;
     }
+
+    struct Vertex {
+        float x;
+        float y;
+        float z;
+        float rhw;
+        float u;
+        float v;
+    };
+
+    IDirect3DVertexBuffer9* quad_buffer = nullptr;
+    constexpr DWORD D3DFVF_CUSTOMVERTEX = D3DFVF_TEX1 | D3DFVF_XYZRHW;
+
+    IDirect3DTexture9** proph_mission_base_texture;
+    IDirect3DTexture9** proph_mission_sword1_texture;
+    IDirect3DTexture9** proph_mission_sword2_texture;
+
+    IDirect3DTexture9* compose_textures(IDirect3DDevice9* device, const std::vector<IDirect3DTexture9*>& textures) {
+        IDirect3DTexture9* result_texture = nullptr;
+
+        constexpr UINT TEX_WIDTH = 128;
+        constexpr UINT TEX_HEIGHT = 128;
+
+        if (quad_buffer == nullptr) {
+            Vertex* vertices = nullptr;
+
+            device->CreateVertexBuffer(4 * sizeof(Vertex), D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &quad_buffer, nullptr);
+            quad_buffer->Lock(0, 4 * sizeof(Vertex), reinterpret_cast<VOID**>(&vertices), 0);
+
+            vertices[0].x = 0.0f;
+            vertices[0].y = 0.0f;
+            vertices[0].z = 0.0f;
+            vertices[0].rhw = 1.0f;
+            vertices[0].u = 0.0f;
+            vertices[0].v = 0.0f;
+
+            vertices[1].x = TEX_WIDTH;
+            vertices[1].y = 0.0f;
+            vertices[1].z = 0.0f;
+            vertices[1].rhw = 1.0f;
+            vertices[1].u = 1.0f;
+            vertices[1].v = 0.0f;
+
+            vertices[2].x = TEX_WIDTH;
+            vertices[2].y = TEX_HEIGHT;
+            vertices[2].z = 0.0f;
+            vertices[2].rhw = 1.0f;
+            vertices[2].u = 1.0f;
+            vertices[2].v = 1.0f;
+
+            vertices[3].x = 0.0f;
+            vertices[3].y = TEX_WIDTH;
+            vertices[3].z = 0.0f;
+            vertices[3].rhw = 1.0f;
+            vertices[3].u = 0.0f;
+            vertices[3].v = 1.0f;
+
+            quad_buffer->Unlock();
+        }
+
+        IDirect3DTexture9* render_target = nullptr;
+        IDirect3DSurface9* render_surface = nullptr;
+
+        device->CreateTexture(TEX_WIDTH, TEX_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &render_target, nullptr);
+
+        render_target->GetSurfaceLevel(0, &render_surface);
+        device->SetRenderTarget(0, render_surface);
+
+        for (auto tex : textures) {
+            device->SetTexture(0, tex);
+            device->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
+        }
+
+        IDirect3DSurface9* result_surface = nullptr;
+        device->CreateTexture(TEX_WIDTH, TEX_HEIGHT, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &result_texture, nullptr);
+        result_texture->GetSurfaceLevel(0, &result_surface);
+
+        device->GetRenderTargetData(render_surface, result_surface);
+
+        render_target->Release();
+
+        return result_texture;
+    }
 }
 
 Mission::MissionImageList PropheciesMission::normal_mode_images({
