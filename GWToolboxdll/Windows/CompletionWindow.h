@@ -45,7 +45,7 @@ namespace Missions {
         bool map_unlocked = true;
 
         uint8_t mission_state = 0;
-        CompletionWindow_Constants::WorldMapIcon outpost_icons[4] = { (CompletionWindow_Constants::WorldMapIcon)0 };
+        std::array<CompletionWindow_Constants::WorldMapIcon,4> outpost_icons = {};
 
         virtual const char* Name();
         virtual bool Draw(IDirect3DDevice9*);

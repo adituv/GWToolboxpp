@@ -96,8 +96,8 @@ namespace {
 
     wchar_t last_player_name[20];
 
-    void GetOutpostIcons(GW::Constants::MapID map_id, WorldMapIcon icons_out[4], uint8_t mission_state, bool is_hard_mode = false) {
-        icons_out = { 0 };
+    std::array<WorldMapIcon,4> GetOutpostIcons(GW::Constants::MapID map_id, uint8_t mission_state, bool is_hard_mode = false) {
+        std::array<WorldMapIcon, 4> icons_out = {};
         const auto area_info = GW::Map::GetMapInfo(map_id);
         uint32_t icon_idx = 0;
         (is_hard_mode); // TODO: Change these icons out for Hard Mode
@@ -162,6 +162,8 @@ namespace {
             }
         } break;
         }
+
+        return icons_out;
     }
 
     bool show_as_list = true;
@@ -767,7 +769,7 @@ void Mission::CheckProgress(const std::wstring& player_name)
 
     mission_state = ToolboxUtils::GetMissionState(outpost, complete_arr, bonus_arr);
 
-    GetOutpostIcons(outpost, outpost_icons, mission_state, hard_mode);
+    outpost_icons = GetOutpostIcons(outpost, mission_state, hard_mode);
 }
 
 IDirect3DTexture9* Mission::GetMissionImage()
