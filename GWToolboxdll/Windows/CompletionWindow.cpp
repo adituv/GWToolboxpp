@@ -545,59 +545,55 @@ namespace {
         float v;
     };
 
+    constexpr int MISSION_ICON_WIDTH = 128;
+    constexpr int MISSION_ICON_HEIGHT = 128;
+
     IDirect3DVertexBuffer9* quad_buffer = nullptr;
     constexpr DWORD D3DFVF_CUSTOMVERTEX = D3DFVF_TEX1 | D3DFVF_XYZRHW;
+
+    void InitializeQuadBuffer(IDirect3DDevice9* device) {
+        Vertex* vertices = nullptr;
+
+        device->CreateVertexBuffer(4 * sizeof(Vertex), D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &quad_buffer, nullptr);
+        quad_buffer->Lock(0, 4 * sizeof(Vertex), reinterpret_cast<VOID**>(&vertices), 0);
+
+        vertices[0].x = 0.0f;
+        vertices[0].y = 0.0f;
+        vertices[0].z = 0.0f;
+        vertices[0].rhw = 1.0f;
+        vertices[0].u = 0.0f;
+        vertices[0].v = 0.0f;
+
+        vertices[1].x = 0.0f;
+        vertices[1].y = MISSION_ICON_HEIGHT;
+        vertices[1].z = 0.0f;
+        vertices[1].rhw = 1.0f;
+        vertices[1].u = 0.0f;
+        vertices[1].v = 1.0f;
+
+        vertices[2].x = MISSION_ICON_WIDTH;
+        vertices[2].y = MISSION_ICON_HEIGHT;
+        vertices[2].z = 0.0f;
+        vertices[2].rhw = 1.0f;
+        vertices[2].u = 1.0f;
+        vertices[2].v = 1.0f;
+
+        vertices[3].x = MISSION_ICON_WIDTH;
+        vertices[3].y = 0.0f;
+        vertices[3].z = 0.0f;
+        vertices[3].rhw = 1.0f;
+        vertices[3].u = 1.0f;
+        vertices[3].v = 0.0f;
+
+        quad_buffer->Unlock();
+    }
 
     IDirect3DTexture9** proph_mission_base_texture;
     IDirect3DTexture9** proph_mission_sword1_texture;
     IDirect3DTexture9** proph_mission_sword2_texture;
 
-    IDirect3DTexture9* compose_textures(IDirect3DDevice9* device, const std::vector<IDirect3DTexture9*>& textures) {
-        constexpr UINT TEX_WIDTH = 128;
-        constexpr UINT TEX_HEIGHT = 128;
-
-        if (quad_buffer == nullptr) {
-            Vertex* vertices = nullptr;
-
-            device->CreateVertexBuffer(4 * sizeof(Vertex), D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &quad_buffer, nullptr);
-            quad_buffer->Lock(0, 4 * sizeof(Vertex), reinterpret_cast<VOID**>(&vertices), 0);
-
-            vertices[0].x = 0.0f;
-            vertices[0].y = 0.0f;
-            vertices[0].z = 0.0f;
-            vertices[0].rhw = 1.0f;
-            vertices[0].u = 0.0f;
-            vertices[0].v = 0.0f;
-
-            vertices[1].x = 0.0f;
-            vertices[1].y = TEX_HEIGHT;
-            vertices[1].z = 0.0f;
-            vertices[1].rhw = 1.0f;
-            vertices[1].u = 0.0f;
-            vertices[1].v = 1.0f;
-
-            vertices[2].x = TEX_WIDTH;
-            vertices[2].y = TEX_HEIGHT;
-            vertices[2].z = 0.0f;
-            vertices[2].rhw = 1.0f;
-            vertices[2].u = 1.0f;
-            vertices[2].v = 1.0f;
-
-            vertices[3].x = TEX_WIDTH;
-            vertices[3].y = 0.0f;
-            vertices[3].z = 0.0f;
-            vertices[3].rhw = 1.0f;
-            vertices[3].u = 1.0f;
-            vertices[3].v = 0.0f;
-
-            quad_buffer->Unlock();
-        }
-
-        IDirect3DTexture9* render_target = nullptr;
-        IDirect3DSurface9* render_surface = nullptr;
-
-        device->CreateTexture(TEX_WIDTH, TEX_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &render_target, nullptr);
-
+    IDirect3DTexture9* DrawTextures(IDirect3DDevice9* device, IDirect3DTexture9* render_target, const std::vector<IDirect3DTexture9*>& textures) {
+        IDirect3DSurface9* render_surface;
         render_target->GetSurfaceLevel(0, &render_surface);
         device->SetRenderTarget(0, render_surface);
 
@@ -605,8 +601,6 @@ namespace {
         device->SetStreamSource(0, quad_buffer, 0, sizeof(Vertex));
 
         for (auto tex : textures) {
-            D3DSURFACE_DESC desc;
-            tex->GetLevelDesc(0, &desc);
             device->SetTexture(0, tex);
             device->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
         }
@@ -614,6 +608,18 @@ namespace {
         device->SetRenderTarget(0, nullptr);
 
         return render_target;
+    }
+
+    void SetURange(float min, float max)
+    {
+        Vertex* vertices;
+
+        quad_buffer->Lock(0, 4 * sizeof(Vertex), reinterpret_cast<VOID**>(&vertices), 0);
+        vertices[0].u = min;
+        vertices[1].u = min;
+        vertices[2].u = max;
+        vertices[3].u = max;
+        quad_buffer->Unlock();
     }
 }
 
@@ -699,10 +705,8 @@ ImVec2 Mission::icon_size = {48.0f, 48.0f};
 
 
 Mission::Mission(const MapID _outpost,
-                 const MissionImageList& _normal_mode_images,
-                 const MissionImageList& _hard_mode_images,
                  const QuestID _zm_quest)
-    : outpost(_outpost), zm_quest(_zm_quest), normal_mode_textures(_normal_mode_images), hard_mode_textures(_hard_mode_images)
+    : outpost(_outpost), zm_quest(_zm_quest)
 {
     map_to = outpost;
     const GW::AreaInfo* map_info = GW::Map::GetMapInfo(outpost);
@@ -852,18 +856,6 @@ void Mission::CheckProgress(const std::wstring& player_name)
     outpost_icons = GetOutpostIcons(outpost, mission_state, hard_mode);
 }
 
-IDirect3DTexture9* Mission::GetMissionImage()
-{
-    const auto* texture_list = &normal_mode_textures;
-
-    if (hard_mode) {
-        texture_list = &hard_mode_textures;
-    }
-    const uint8_t index = is_completed + 2 * bonus;
-
-    return texture_list->at(index).texture;
-}
-
 bool Mission::IsDaily()
 {
     return false;
@@ -986,7 +978,7 @@ IDirect3DTexture9* PvESkill::GetMissionImage()
 }
 
 PvESkill::PvESkill(const SkillID _skill_id)
-    : Mission(MapID::None, dummy_var, dummy_var), skill_id(_skill_id)
+    : Mission(MapID::None), skill_id(_skill_id)
 {
     if (_skill_id != SkillID::No_Skill) {
         const auto skill = GW::SkillbarMgr::GetSkillConstantData(skill_id);
@@ -1093,11 +1085,8 @@ void EotNMission::CheckProgress(const std::wstring& player_name)
 
 IDirect3DTexture9* EotNMission::GetMissionImage()
 {
-    const auto* texture_list = &normal_mode_textures;
-    if (hard_mode) {
-        texture_list = &hard_mode_textures;
-    }
-    return texture_list->at(is_completed ? 1 : 0).texture;
+    // TODO
+    return nullptr;
 }
 
 void Vanquish::CheckProgress(const std::wstring& player_name)
@@ -1113,7 +1102,10 @@ void Vanquish::CheckProgress(const std::wstring& player_name)
 
 IDirect3DTexture9* Vanquish::GetMissionImage()
 {
-    return hard_mode_textures.at(is_completed).texture;
+    if (is_completed)
+        return *Mission::icon_hard_mode_gold;
+    else
+        return *Mission::icon_hard_mode;
 }
 
 
@@ -1465,6 +1457,9 @@ void CompletionWindow::Initialize_Prophecies()
     LoadTextures(PropheciesMission::hard_mode_images);
 
     PropheciesMission::CreateMissionImages();
+    FactionsMission::CreateMissionImages();
+    NightfallMission::CreateMissionImages();
+    TormentMission::CreateMissionImages();
 
     auto& prophecies_missions = missions.at(Campaign::Prophecies);
     prophecies_missions.push_back(new PropheciesMission(
@@ -3244,36 +3239,182 @@ void UnlockedPvPItemUpgrade::OnClick()
     }
 }
 
-IDirect3DTexture9** Missions::PropheciesMission::normal_mode_parts[3] = {};
-IDirect3DTexture9** Missions::PropheciesMission::hard_mode_parts[3] = {};
+bool Mission::icon_parts_loaded = false;
+IDirect3DTexture9** Mission::icon_hard_mode;
+IDirect3DTexture9** Mission::icon_hard_mode_gold;
+IDirect3DTexture9** Mission::icon_hm_sword_1;
+IDirect3DTexture9** Mission::icon_hm_sword_2;
+IDirect3DTexture9** Mission::icon_hm_sword_3;
+
+IDirect3DTexture9** PropheciesMission::icon_mission;
+IDirect3DTexture9** PropheciesMission::icon_sword_1;
+IDirect3DTexture9** PropheciesMission::icon_sword_2;
+
+IDirect3DTexture9** FactionsMission::icon_mission;
+IDirect3DTexture9** FactionsMission::icon_sword_1;
+IDirect3DTexture9** FactionsMission::icon_sword_2;
+IDirect3DTexture9** FactionsMission::icon_sword_3;
+
+IDirect3DTexture9** NightfallMission::icon_mission;
+IDirect3DTexture9** NightfallMission::icon_sword_1;
+IDirect3DTexture9** NightfallMission::icon_sword_2;
+IDirect3DTexture9** NightfallMission::icon_sword_3;
 
 IDirect3DTexture9* Missions::PropheciesMission::normal_mode_textures[4] = {};
 IDirect3DTexture9* Missions::PropheciesMission::hard_mode_textures[4] = {};
 
-void Missions::PropheciesMission::CreateMissionImages()
-{
-    PropheciesMission::normal_mode_parts[0] = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_Mission));
-    PropheciesMission::normal_mode_parts[1] = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_CompletePrimary));
-    PropheciesMission::normal_mode_parts[2] = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_CompleteSecondary));
+IDirect3DTexture9* Missions::FactionsMission::normal_mode_textures[4] = {};
+IDirect3DTexture9* Missions::FactionsMission::hard_mode_textures[4] = {};
 
-    PropheciesMission::hard_mode_parts[0] = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::HardMode));
-    PropheciesMission::hard_mode_parts[1] = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::HardMode_CompletePrimary));
-    PropheciesMission::hard_mode_parts[2] = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::HardMode_CompleteExpert));
+void Mission::CreateMissionImages()
+{
+    if (Mission::icon_parts_loaded) return;
+
+    Mission::icon_hard_mode = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::HardMode));
+    Mission::icon_hard_mode_gold = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::HardMode_CompleteAll));
+    Mission::icon_hm_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::HardMode_CompletePrimary));
+    Mission::icon_hm_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::HardMode_CompleteExpert));
+    Mission::icon_hm_sword_3 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::HardMode_CompleteMaster));
+
+    Mission::icon_parts_loaded = true;
+}
+
+void PropheciesMission::CreateMissionImages()
+{
+    Mission::CreateMissionImages();
+
+    PropheciesMission::icon_mission = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_Mission));
+    PropheciesMission::icon_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_CompletePrimary));
+    PropheciesMission::icon_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Kryta_CompleteSecondary));
 
     Resources::EnqueueDxTask([](IDirect3DDevice9* device) {
-        normal_mode_textures[0] = *normal_mode_parts[0];
-        normal_mode_textures[1] = compose_textures(device, { *normal_mode_parts[1], *normal_mode_parts[0] });
-        normal_mode_textures[2] = compose_textures(device, { *normal_mode_parts[2], *normal_mode_parts[0] });
-        normal_mode_textures[3] = compose_textures(device, { *normal_mode_parts[2], *normal_mode_parts[1], *normal_mode_parts[0] });
+        normal_mode_textures[0] = *icon_mission;
+        hard_mode_textures[0] = *Mission::icon_hard_mode;
 
-        hard_mode_textures[0] = *hard_mode_parts[0];
-        hard_mode_textures[1] = compose_textures(device, { *hard_mode_parts[1], *hard_mode_parts[0] });
-        hard_mode_textures[2] = compose_textures(device, { *hard_mode_parts[2], *hard_mode_parts[0] });
-        hard_mode_textures[3] = compose_textures(device, { *hard_mode_parts[2], *hard_mode_parts[1], *hard_mode_parts[0] });
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[1], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[2], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[3], nullptr);
+
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[1], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[2], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[3], nullptr);
+
+        if (quad_buffer == nullptr) {
+            InitializeQuadBuffer(device);
+        }
+
+        SetURange(0.0f, 1.0f);
+
+        DrawTextures(device, normal_mode_textures[1], { *icon_sword_1 });
+        DrawTextures(device, normal_mode_textures[2], { *icon_sword_2 });
+        DrawTextures(device, normal_mode_textures[3], { *icon_sword_1, *icon_sword_2 });
+
+        DrawTextures(device, hard_mode_textures[1], { *icon_hm_sword_1 });
+        DrawTextures(device, hard_mode_textures[2], { *icon_hm_sword_2 });
+        DrawTextures(device, hard_mode_textures[3], { *icon_hm_sword_1, *icon_hm_sword_2 });
+
+        SetURange(0.0f, 0.5f);
+
+        DrawTextures(device, normal_mode_textures[1], { *icon_mission });
+        DrawTextures(device, normal_mode_textures[2], { *icon_mission });
+        DrawTextures(device, normal_mode_textures[3], { *icon_mission });
+
+        DrawTextures(device, hard_mode_textures[1], { *icon_hard_mode });
+        DrawTextures(device, hard_mode_textures[2], { *icon_hard_mode });
+        DrawTextures(device, hard_mode_textures[3], { *icon_hard_mode_gold });
     });
 }
 
-IDirect3DTexture9* Missions::PropheciesMission::GetMissionImage()
+IDirect3DTexture9* PropheciesMission::GetMissionImage()
+{
+    int idx = this->is_completed + 2 * this->bonus;
+    if (hard_mode) {
+        return PropheciesMission::hard_mode_textures[idx];
+    }
+    return PropheciesMission::normal_mode_textures[idx];
+}
+
+void FactionsMission::CreateMissionImages()
+{
+    Mission::CreateMissionImages();
+
+    icon_mission = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Cantha_Mission));
+    icon_sword_1 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Cantha_CompletePrimary));
+    icon_sword_2 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Cantha_CompleteExpert));
+    icon_sword_3 = GwDatTextureModule::LoadTextureFromFileId(static_cast<uint32_t>(CompletionWindow_Constants::WorldMapIcon::Cantha_CompleteMaster));
+
+    Resources::EnqueueDxTask([](IDirect3DDevice9* device) {
+        normal_mode_textures[0] = *icon_mission;
+        hard_mode_textures[0] = *Mission::icon_hard_mode;
+
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[1], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[2], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &normal_mode_textures[3], nullptr);
+
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[1], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[2], nullptr);
+        device->CreateTexture(MISSION_ICON_WIDTH, MISSION_ICON_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &hard_mode_textures[3], nullptr);
+
+        if (quad_buffer == nullptr) {
+            InitializeQuadBuffer(device);
+        }
+
+        SetURange(0.0f, 0.5f);
+
+        DrawTextures(device, normal_mode_textures[1], { *icon_mission });
+        DrawTextures(device, normal_mode_textures[2], { *icon_mission });
+        DrawTextures(device, normal_mode_textures[3], { *icon_mission });
+
+        SetURange(0.0f, 1.0f);
+
+        DrawTextures(device, normal_mode_textures[1], { *icon_sword_1 });
+        DrawTextures(device, normal_mode_textures[2], { *icon_sword_1, *icon_sword_2 });
+        DrawTextures(device, normal_mode_textures[3], { *icon_sword_1, *icon_sword_2, *icon_sword_3 });
+
+        DrawTextures(device, hard_mode_textures[1], { *icon_hm_sword_1 });
+        DrawTextures(device, hard_mode_textures[2], { *icon_hm_sword_1, *icon_hm_sword_2 });
+        DrawTextures(device, hard_mode_textures[3], { *icon_hm_sword_1, *icon_hm_sword_2, *icon_hm_sword_3 });
+
+        SetURange(0.0f, 0.5f);
+
+        DrawTextures(device, hard_mode_textures[1], { *icon_hard_mode });
+        DrawTextures(device, hard_mode_textures[2], { *icon_hard_mode });
+        DrawTextures(device, hard_mode_textures[3], { *icon_hard_mode_gold });
+
+    });
+}
+
+IDirect3DTexture9* Missions::FactionsMission::GetMissionImage()
+{
+    int idx = 0;
+
+    switch (this->mission_state) {
+    case 7:
+        idx = 3;
+        break;
+    case 3:
+        idx = 2;
+        break;
+    case 1:
+        idx = 1;
+        break;
+    case 0:
+        break;
+    default:
+        Log::Error("Invalid mission state: %d", this->mission_state);
+    }
+
+    if (hard_mode) {
+        return FactionsMission::hard_mode_textures[idx];
+    }
+    return FactionsMission::normal_mode_textures[idx];
+}
+
+void Missions::NightfallMission::CreateMissionImages()
+{
+}
+
+IDirect3DTexture9* Missions::NightfallMission::GetMissionImage()
 {
     int idx = this->is_completed + 2 * this->bonus;
     if (hard_mode) {
